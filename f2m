@@ -1,0 +1,25 @@
+#!/bin/sh
+##f2m (FLAC to MP3) version 1
+##f2m е скрипт за конвертиране на FLAC файлове в MP3, който нормализира нивото на звука и прави resample на песните до 44KHz, а след това добавя и обложка (folder.jpg).
+##Изисквания: BASH, или Bourne shell (sh), flac, lame, metaflac, id3v2 и imagemagick.
+##Автор: Георги Пацев (georgi[точка]patsev[в]gmail[точка]com)
+hdd=/media/hit3/Mp3
+
+for a in *.flac
+do
+       OUTF=`echo "$a" | sed s/"\.flac$"/"\.mp3"/g`
+
+       ARTIST=`metaflac "$a" --show-tag=ARTIST | sed s/.*=//g`
+       TITLE=`metaflac "$a" --show-tag=TITLE | sed s/.*=//g`
+       ALBUM=`metaflac "$a" --show-tag=ALBUM | sed s/.*=//g`
+       GENRE=`metaflac "$a" --show-tag=GENRE | sed s/.*=//g`
+       TRACKNUMBER=`metaflac "$a" --show-tag=TRACKNUMBER | sed s/.*=//g`
+       DATE=`metaflac "$a" --show-tag=DATE | sed s/.*=//g`
+
+       flac -c -d "$a" | lame --clipdetect --replaygain-accurate -m s -h -V0 --vbr-new --quiet --resample 44.1 - "$OUTF"
+       id3v2 -t "$TITLE" -T "$TRACKNUMBER" -a "$ARTIST" -A "$ALBUM" -g "$GENRE" -y "$DATE" "$OUTF"
+done
+convert folder.jpg -resize 200x200 0folder.jpg
+find -type f -name "*.mp3" -execdir eyeD3 --add-image=0folder.jpg:FRONT_COVER {} \;
+mkdir "$hdd"/"$ARTIST" ; mkdir "$hdd"/"$ARTIST"/"$ALBUM"
+mv *.mp3 "$hdd"/"$ARTIST"/"$ALBUM"/.
